@@ -2,10 +2,30 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 exports.getMembers = async (req, res) => {
+  const { search, department, status } = req.query;
+
   try {
-    const result = await pool.query(
-      'SELECT id, name, email, role, department, status, created_at FROM users ORDER BY created_at DESC'
-    );
+    let query = 'SELECT id, name, email, role, department, status, created_at FROM users WHERE 1=1';
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      query += ` AND (name ILIKE $${params.length} OR email ILIKE $${params.length})`;
+    }
+
+    if (department) {
+      params.push(department);
+      query += ` AND department = $${params.length}`;
+    }
+
+    if (status) {
+      params.push(status);
+      query += ` AND status = $${params.length}`;
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
