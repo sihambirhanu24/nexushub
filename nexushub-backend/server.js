@@ -5,6 +5,7 @@ const pool = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const memberRoutes = require('./routes/memberRoutes');
 const requestRoutes = require('./routes/requestRoutes');
+const resourceRoutes = require('./routes/resourceRoutes');
 
 
 const app = express();
@@ -14,7 +15,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/requests', requestRoutes);
-
+app.use('/api/resources', resourceRoutes);
 app.get('/', (req, res) => {
   res.send('NexusHub API is running');
 });
