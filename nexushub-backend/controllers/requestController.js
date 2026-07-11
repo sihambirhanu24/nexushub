@@ -1,6 +1,5 @@
 const pool = require('../config/db');
 
-
 exports.createRequest = async (req, res) => {
   const { title, description, type, priority } = req.body;
 
@@ -20,23 +19,37 @@ exports.createRequest = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 exports.getRequests = async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM work_requests ORDER BY created_at DESC'
-    );
+    let query = `SELECT work_requests.*, users.name AS requested_by_name
+       FROM work_requests
+       JOIN users ON work_requests.requested_by = users.id`;
+    let params = [];
 
+    if (req.user.role === 'staff') {
+      query += ' WHERE work_requests.requested_by = $1';
+      params.push(req.user.id);
+    }
+
+    query += ' ORDER BY work_requests.created_at DESC';
+
+    const result = await pool.query(query, params);
     res.json({ requests: result.rows });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 exports.getRequestById = async (req, res) => {
   const { id } = req.params;
 
   try {
     const result = await pool.query(
-      'SELECT * FROM work_requests WHERE id = $1',
+      `SELECT work_requests.*, users.name AS requested_by_name
+       FROM work_requests
+       JOIN users ON work_requests.requested_by = users.id
+       WHERE work_requests.id = $1`,
       [id]
     );
 
@@ -49,9 +62,11 @@ exports.getRequestById = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 exports.updateRequest = async (req, res) => {
   const { id } = req.params;
   const { title, description, type, status, priority, assigned_to } = req.body;
+
   try {
     const result = await pool.query(
       `UPDATE work_requests 
@@ -75,10 +90,7 @@ exports.deleteRequest = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query(
-      'DELETE FROM work_requests WHERE id = $1 RETURNING *',
-      [id]
-    );
+    const result = await pool.query('DELETE FROM work_requests WHERE id = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Request not found' });
