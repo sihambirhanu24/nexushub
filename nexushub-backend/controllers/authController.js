@@ -51,18 +51,31 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
+  const token = jwt.sign(
+  { id: user.id, role: user.role, department: user.department },
+  process.env.JWT_SECRET,
+  { expiresIn: '1d' }
+);
 
     res.json({
       message: 'Login successful',
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
     });
 
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  const { name, email } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING id, name, email, role, department',
+      [name, email, req.user.id]
+    );
+    res.json({ message: 'Profile updated', user: result.rows[0] });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
