@@ -1,5 +1,8 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
+const generateTempPassword = require('../utils/generatePassword');
+const sendWelcomeEmail = require('../utils/sendEmail');
+
 
 exports.getMembers = async (req, res) => {
   const { search, department, status } = req.query;
@@ -7,6 +10,11 @@ exports.getMembers = async (req, res) => {
   try {
     let query = 'SELECT id, name, email, role, department, status, created_at FROM users WHERE 1=1';
     const params = [];
+
+    if (req.user.role === 'manager' && req.user.department) {
+      params.push(req.user.department);
+      query += ` AND department = $${params.length}`;
+    }
 
     if (search) {
       params.push(`%${search}%`);
