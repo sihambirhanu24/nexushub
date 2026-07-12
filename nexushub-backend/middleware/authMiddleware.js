@@ -24,3 +24,8 @@ exports.adminOnly = (req, res, next) => {
   }
   next();
 };
+exports.adminOrManagerOwn = async (req, res, next) => {
+  if (req.user.role === 'admin') return next();
+  if (req.user.role === 'manager') return next();
+  return res.status(403).json({ message: 'Access denied' });
+};

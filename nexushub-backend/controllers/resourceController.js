@@ -2,7 +2,9 @@ const pool = require('../config/db');
 
 exports.getResources = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM resources ORDER BY created_at DESC');
+    let query = 'SELECT * FROM resources ORDER BY created_at DESC';
+
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -26,16 +28,48 @@ exports.getResourceById = async (req, res) => {
 };
 
 exports.createResource = async (req, res) => {
-  const { resource_code, name, category, status } = req.body;
+  const { name, category, status } = req.body;
+
+  if (!name || !category) {
+    return res.status(400).json({ message: 'Name and category are required' });
+  }
 
   try {
+    // Generate prefix from category
+    const prefixMap = {
+      'Laptop': 'LP',
+      'Desktop': 'DT',
+      'Printer': 'PR',
+      'Meeting Room': 'MR',
+      'Vehicle': 'VH',
+      'Projector': 'PJ',
+      'Furniture': 'FN',
+    };
+    const prefix = prefixMap[category] || 'RS';
+
+    // Get highest existing number for this category prefix
+    const maxResult = await pool.query(
+      `SELECT MAX(CAST(SUBSTRING(resource_code FROM ${prefix.length + 2}) AS INTEGER)) as max_num 
+       FROM resources 
+       WHERE resource_code LIKE $1`,
+      [`${prefix}-%`]
+    );
+    const maxNum = maxResult.rows[0].max_num || 0;
+    const resourceCode = `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+
     const result = await pool.query(
-      'INSERT INTO resources (resource_code, name, category, status) VALUES ($1, $2, $3, $4) RETURNING *',
-      [resource_code, name, category, status || 'available']
+      `INSERT INTO resources (resource_code, name, category, status)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [resourceCode, name, category, status || 'available']
     );
 
-    res.status(201).json({ message: 'Resource created successfully', resource: result.rows[0] });
+    res.status(201).json({ 
+      message: 'Resource added successfully', 
+      resource: result.rows[0] 
+    });
   } catch (err) {
+    console.error('createResource error:', err.message);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

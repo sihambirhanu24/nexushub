@@ -4,6 +4,8 @@ import { LayoutDashboard, Users, ClipboardList, Package, BarChart3, LogOut, Zap,
 import { useAuth } from '../context/AuthContext';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
+import ThemeToggle from './ThemeToggle';
+
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -112,24 +114,24 @@ function Layout({ children }) {
       <main className="flex-1 md:ml-60 flex flex-col min-h-screen w-full">
 
        <header className="h-16 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 flex items-center gap-3 px-4 md:px-6 sticky top-0 z-20">
-          <button
-            className="md:hidden text-gray-400 hover:text-white flex-shrink-0"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+      <button
+        className="md:hidden text-gray-400 hover:text-white flex-shrink-0"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open menu"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
 
-          <div className="flex-1 min-w-0 max-w-xl">
-            <GlobalSearch />
-          </div>
+      <div className="flex-1 min-w-0 max-w-xl">
+        <GlobalSearch />
+      </div>
 
-          <div className="ml-auto flex items-center">
-            <NotificationBell />
-          </div>
-        </header>
-
-        <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
+      <div className="ml-auto flex items-center gap-3">
+        <ThemeToggle />
+        <NotificationBell />
+      </div>
+    </header>
+            <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </div>
       </main>

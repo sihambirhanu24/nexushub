@@ -19,3 +19,39 @@ exports.getStatistics = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+exports.getDepartmentStats = async (req, res) => {
+  const department = req.user.department;
+
+  if (!department) {
+    return res.status(400).json({ message: 'No department assigned to this user' });
+  }
+
+  try {
+    const [members, requests, activeMembers] = await Promise.all([
+      pool.query(
+        'SELECT COUNT(*) FROM users WHERE department = $1',
+        [department]
+      ),
+      pool.query(
+        `SELECT status, COUNT(*) FROM work_requests 
+         JOIN users ON work_requests.requested_by = users.id 
+         WHERE users.department = $1 
+         GROUP BY status`,
+        [department]
+      ),
+      pool.query(
+        `SELECT COUNT(*) FROM users WHERE department = $1 AND status = 'active'`,
+        [department]
+      ),
+    ]);
+
+    res.json({
+      department,
+      totalMembers: members.rows[0].count,
+      activeMembers: activeMembers.rows[0].count,
+      requestsByStatus: requests.rows,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

@@ -4,8 +4,12 @@ exports.createRequest = async (req, res) => {
   const { title, description, type, priority } = req.body;
 
   try {
-    const countResult = await pool.query('SELECT COUNT(*) FROM work_requests');
-    const requestNumber = `REQ-${String(parseInt(countResult.rows[0].count) + 1).padStart(4, '0')}`;
+    // Use MAX instead of COUNT to avoid collision after deletions
+    const maxResult = await pool.query(
+      "SELECT MAX(CAST(SUBSTRING(request_number FROM 5) AS INTEGER)) as max_num FROM work_requests"
+    );
+    const maxNum = maxResult.rows[0].max_num || 0;
+    const requestNumber = `REQ-${String(maxNum + 1).padStart(4, '0')}`;
 
     const result = await pool.query(
       `INSERT INTO work_requests (request_number, title, description, type, status, priority, requested_by) 
@@ -14,8 +18,12 @@ exports.createRequest = async (req, res) => {
       [requestNumber, title, description, type, 'pending', priority, req.user.id]
     );
 
-    res.status(201).json({ message: 'Work request created successfully', request: result.rows[0] });
+    res.status(201).json({ 
+      message: 'Work request created successfully', 
+      request: result.rows[0] 
+    });
   } catch (err) {
+    console.error('createRequest error:', err.message);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

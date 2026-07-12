@@ -4,7 +4,7 @@ import api from '../api/axios';
 
 function AddResourceModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({
-    resource_code: '', name: '', category: 'Laptop', status: 'available',
+    name: '', category: 'Laptop', status: 'available',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ function AddResourceModal({ isOpen, onClose, onSuccess }) {
       await api.post('/resources', form);
       onSuccess();
       onClose();
-      setForm({ resource_code: '', name: '', category: 'Laptop', status: 'available' });
+      setForm({ name: '', category: 'Laptop', status: 'available' });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add resource');
     } finally {
@@ -36,19 +36,17 @@ function AddResourceModal({ isOpen, onClose, onSuccess }) {
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Resource Code</label>
-          <input
-            name="resource_code" value={form.resource_code} onChange={handleChange} placeholder="e.g., LP-2201" required
-            className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white text-sm border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-600"
-          />
-        </div>
 
+      <p className="text-xs text-gray-500 mb-4">
+        Resource code will be auto-generated based on category (e.g. LP-001 for Laptop).
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Name</label>
           <input
-            name="name" value={form.name} onChange={handleChange} placeholder="e.g., MacBook Pro M2" required
+            name="name" value={form.name} onChange={handleChange}
+            placeholder="e.g., MacBook Pro M2" required
             className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white text-sm border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-600"
           />
         </div>

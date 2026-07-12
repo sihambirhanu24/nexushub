@@ -62,6 +62,7 @@ function TeamMembers() {
     status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-700 text-gray-400';
 
   const isAdmin = user?.role === 'admin';
+  const canManageMembers = user?.role === 'admin' || user?.role === 'manager';
 
   return (
     <Layout>
@@ -72,7 +73,10 @@ function TeamMembers() {
             <p className="text-gray-500 text-sm mt-1">Manage your organization's members.</p>
           </div>
           {isAdmin && (
-            <button onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium w-full sm:w-auto">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium w-full sm:w-auto"
+            >
               <Plus className="w-4 h-4" /> Add Member
             </button>
           )}
@@ -81,8 +85,10 @@ function TeamMembers() {
         <div className="relative mb-4 w-full sm:max-w-sm">
           <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
-            type="text" placeholder="Search members, roles, or departments..."
-            value={search} onChange={(e) => setSearch(e.target.value)}
+            type="text"
+            placeholder="Search members, roles, or departments..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-900 border border-gray-800 text-white text-sm focus:outline-none focus:border-indigo-500 placeholder-gray-600"
           />
         </div>
@@ -108,7 +114,7 @@ function TeamMembers() {
           </select>
         </div>
 
-        {/* Desktop / tablet table view - hidden below md */}
+        {/* Desktop table view */}
         <div className="hidden md:block bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -118,7 +124,9 @@ function TeamMembers() {
                 <th className="text-left px-5 py-3 font-medium">Department</th>
                 <th className="text-left px-5 py-3 font-medium">Role</th>
                 <th className="text-left px-5 py-3 font-medium">Status</th>
-                {isAdmin && <th className="text-left px-5 py-3 font-medium">Actions</th>}
+                {canManageMembers && (
+                  <th className="text-left px-5 py-3 font-medium">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -142,15 +150,17 @@ function TeamMembers() {
                         {m.status}
                       </span>
                     </td>
-                    {isAdmin && (
+                    {canManageMembers && (
                       <td className="px-5 py-3">
                         <div className="flex gap-2">
                           <button onClick={(e) => { e.stopPropagation(); setEditingMember(m); }}>
                             <Pencil className="w-4 h-4 text-gray-500 hover:text-indigo-400" />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); setDeletingMember(m); }}>
-                            <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-400" />
-                          </button>
+                          {isAdmin && (
+                            <button onClick={(e) => { e.stopPropagation(); setDeletingMember(m); }}>
+                              <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-400" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -161,7 +171,7 @@ function TeamMembers() {
           </table>
         </div>
 
-        {/* Mobile card view - shown only below md */}
+        {/* Mobile card view */}
         <div className="md:hidden space-y-3">
           {loading ? (
             <p className="text-center py-8 text-gray-500 text-sm">Loading...</p>
@@ -188,14 +198,22 @@ function TeamMembers() {
                     <span>{m.department || '—'}</span>
                     <span className="capitalize">{m.role}</span>
                   </div>
-                  {isAdmin && (
+                  {canManageMembers && (
                     <div className="flex gap-3">
-                      <button onClick={(e) => { e.stopPropagation(); setEditingMember(m); }} className="p-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditingMember(m); }}
+                        className="p-1"
+                      >
                         <Pencil className="w-4 h-4 text-gray-500 hover:text-indigo-400" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); setDeletingMember(m); }} className="p-1">
-                        <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-400" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingMember(m); }}
+                          className="p-1"
+                        >
+                          <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-400" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -204,9 +222,22 @@ function TeamMembers() {
           )}
         </div>
 
-        <AddMemberModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSuccess={() => { fetchMembers(); showToast('Member added successfully'); }} />
-        <EditMemberModal isOpen={!!editingMember} onClose={() => setEditingMember(null)} onSuccess={() => { fetchMembers(); showToast('Member updated successfully'); }} member={editingMember} />
-        <MemberDetailModal isOpen={!!viewingMember} onClose={() => setViewingMember(null)} member={viewingMember} />
+        <AddMemberModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => { fetchMembers(); showToast('Member added successfully'); }}
+        />
+        <EditMemberModal
+          isOpen={!!editingMember}
+          onClose={() => setEditingMember(null)}
+          onSuccess={() => { fetchMembers(); showToast('Member updated successfully'); }}
+          member={editingMember}
+        />
+        <MemberDetailModal
+          isOpen={!!viewingMember}
+          onClose={() => setViewingMember(null)}
+          member={viewingMember}
+        />
         <ConfirmDialog
           isOpen={!!deletingMember}
           onClose={() => setDeletingMember(null)}
