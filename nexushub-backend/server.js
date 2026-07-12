@@ -11,11 +11,10 @@ const searchRoutes = require('./routes/searchRoutes');
 
 
 const app = express();
-
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://nexushub-siham.vercel.app', 
+    'https://nexushub-indol.vercel.app',
   ],
   credentials: true,
 }));
