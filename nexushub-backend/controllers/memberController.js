@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
-const generateTempPassword = require('../utils/generatePassword');
-const sendWelcomeEmail = require('../utils/sendEmail');
+
 
 
 exports.getMembers = async (req, res) => {
