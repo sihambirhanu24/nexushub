@@ -1,40 +1,111 @@
+cat > /mnt/user-data/outputs/README.md << 'ENDOFFILE'
 # NexusHub — Smart Operations Management Portal
 
-A full-stack PERN (PostgreSQL, Express, React, Node.js) application built for the Teamwork IT Solution PLC Developer Internship Technical Assessment. NexusHub brings team member management, work request tracking, resource registry, and system-wide statistics under one roof.
+> A full-stack PERN (PostgreSQL, Express, React, Node.js) web application built as a Developer Internship Technical Assessment for Teamwork IT Solution PLC.
+
+NexusHub replaces the classic "one spreadsheet for staff, another for equipment, a WhatsApp group for maintenance requests" with a single, role-aware operations portal that brings team members, work requests, and resources under one roof.
+
+---
+
+## Live Demo
+
+- **Frontend:** https://nexushub-frontend.vercel.app
+- **Backend API:** https://nexushub-backend.onrender.com
+- **GitHub:** https://github.com/sihambirhanu24/nexushub
+
+**Demo credentials (local):**
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@example.com | Admin123 |
+| Staff | test@example.com | password123 |
 
 ---
 
 ## Tech Stack
 
-**Frontend:** React (Vite), Tailwind CSS v4, React Router DOM, Axios, Lucide Icons
-**Backend:** Node.js, Express.js
-**Database:** PostgreSQL
-**Auth:** JWT (JSON Web Tokens), bcrypt password hashing
+| Layer | Technology | Why chosen |
+|---|---|---|
+| Frontend | React 18 + Vite | Fast dev server, modern React, HMR |
+| Styling | Tailwind CSS v4 | Utility-first, no heavy component library |
+| Routing | React Router DOM v6 | Client-side routing with protected routes |
+| HTTP Client | Axios | Centralized interceptor for automatic JWT attachment |
+| Backend | Node.js + Express | Lightweight REST API matching the assessment stack |
+| Database | PostgreSQL 18 | Relational data with real constraints and foreign keys |
+| Auth | JWT + bcryptjs | Stateless auth, secure one-way password hashing |
 
 ---
 
 ## Project Structure
 
-This is a monorepo containing two independent projects:
-
 ```
 Nexushub/
-├── nexushub-backend/     # Express API server
-└── nexushub-frontend/    # React application
+├── README.md
+├── nexushub_database.sql          # Complete database export (schema + seed data)
+├── nexushub-backend/              # Express REST API
+│   ├── config/
+│   │   └── db.js                  # PostgreSQL connection pool (local + Neon support)
+│   ├── controllers/
+│   │   ├── authController.js      # Register, login, updateProfile, changePassword
+│   │   ├── memberController.js    # Team Members CRUD with role-based data scoping
+│   │   ├── requestController.js   # Work Requests CRUD with SQL JOIN for requester name
+│   │   ├── resourceController.js  # Resources CRUD + department resource view
+│   │   ├── statsController.js     # System-wide + department-level aggregation queries
+│   │   └── searchController.js    # Global cross-module search
+│   ├── middleware/
+│   │   └── authMiddleware.js      # protect (JWT verify) + adminOnly + adminOrManagerOwn
+│   ├── routes/                    # URL → controller mappings
+│   ├── .env.example               # Environment variable template
+│   └── server.js                  # Express app entry point with all routes wired
+│
+└── nexushub-frontend/             # React application
+    └── src/
+        ├── api/
+        │   └── axios.js           # Axios instance with JWT interceptor
+        ├── components/            # Reusable UI components
+        │   ├── Layout.jsx         # Fixed sidebar + sticky top bar with search + notifications
+        │   ├── GlobalSearch.jsx   # Debounced cross-module search with grouped dropdown
+        │   ├── NotificationBell.jsx # Real-time activity bell with dismiss functionality
+        │   ├── ThemeToggle.jsx    # Dark/light mode toggle
+        │   ├── Modal.jsx          # Reusable modal wrapper
+        │   ├── ConfirmDialog.jsx  # Delete confirmation dialog
+        │   ├── Toast.jsx          # Success/error notification toast
+        │   ├── AddMemberModal.jsx
+        │   ├── EditMemberModal.jsx
+        │   ├── MemberDetailModal.jsx
+        │   ├── AddRequestModal.jsx
+        │   ├── EditRequestModal.jsx
+        │   ├── RequestDetailModal.jsx
+        │   ├── AddResourceModal.jsx
+        │   ├── EditResourceModal.jsx
+        │   └── ResourceDetailModal.jsx
+        ├── context/
+        │   ├── AuthContext.jsx    # Global auth state with localStorage persistence
+        │   └── ThemeContext.jsx   # Dark/light mode state with localStorage persistence
+        ├── pages/
+        │   ├── Login.jsx
+        │   ├── Register.jsx
+        │   ├── Dashboard.jsx
+        │   ├── TeamMembers.jsx
+        │   ├── WorkRequests.jsx
+        │   ├── Resources.jsx
+        │   ├── Statistics.jsx
+        │   └── Profile.jsx
+        └── App.jsx                # Route definitions with protected routes
 ```
 
 ---
 
 ## Prerequisites
 
-Before you begin, make sure you have installed:
-- **Node.js** (v18 or higher recommended)
-- **PostgreSQL** (v14 or higher)
+Before starting, make sure you have installed:
+- **Node.js** v18 or higher
+- **PostgreSQL** v14 or higher
 - **npm** (comes with Node.js)
+- **git**
 
 ---
 
-## Setup Instructions (from zero)
+## Setup from Zero
 
 ### 1. Clone the repository
 
@@ -43,9 +114,9 @@ git clone https://github.com/sihambirhanu24/nexushub.git
 cd nexushub
 ```
 
-### 2. Database Setup
+### 2. Database setup
 
-Log into PostgreSQL and create the database and a dedicated user:
+Start PostgreSQL and create the database and user:
 
 ```bash
 sudo -i -u postgres
@@ -56,9 +127,10 @@ psql
 CREATE DATABASE nexushub;
 CREATE USER nexushub_admin WITH PASSWORD 'your_chosen_password';
 GRANT ALL PRIVILEGES ON DATABASE nexushub TO nexushub_admin;
+\q
 ```
 
-Connect to the new database and grant schema-level permissions (required on PostgreSQL 15+):
+Connect to the database and grant schema permissions (required on PostgreSQL 15+):
 
 ```bash
 psql -d nexushub
@@ -70,9 +142,25 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO nexushub_admin;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO nexushub_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO nexushub_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO nexushub_admin;
+\q
 ```
 
-Exit `psql`, then create the tables (run each block in `psql -d nexushub`):
+Exit back to your normal user:
+```bash
+exit
+```
+
+### 3. Import the database schema and seed data
+
+The repository includes a complete database export:
+
+```bash
+sudo -u postgres psql -d nexushub -f nexushub_database.sql
+```
+
+This creates all tables with constraints and imports existing test data.
+
+**If you prefer to create tables manually**, run these in `psql -d nexushub`:
 
 ```sql
 CREATE TABLE users (
@@ -111,16 +199,17 @@ CREATE TABLE resources (
 );
 ```
 
-### 3. Backend Setup
+### 4. Backend setup
 
 ```bash
 cd nexushub-backend
 npm install
+cp .env.example .env
 ```
 
-Create a `.env` file in `nexushub-backend/` (copy `.env.example` and fill in real values):
+Edit `.env` with your actual values:
 
-```
+```env
 DB_USER=nexushub_admin
 DB_PASSWORD=your_chosen_password
 DB_HOST=localhost
@@ -130,7 +219,7 @@ PORT=5000
 JWT_SECRET=generate_a_long_random_string_here
 ```
 
-Generate a secure `JWT_SECRET`:
+Generate a secure JWT secret:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
@@ -140,119 +229,367 @@ Start the backend:
 node server.js
 ```
 
-The API will run on `http://localhost:5000`.
-
-### 4. Create the first Admin account
-
-Since new admins can only be created by existing admins through the app, you must bootstrap the very first one manually:
-
+Confirm it's working:
 ```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Admin User","email":"admin@example.com","password":"yourpassword","role":"admin","department":"IT"}'
+curl http://localhost:5000/api/health
+# Expected: {"status":"ok","dbTime":"..."}
 ```
 
-### 5. Frontend Setup
+### 5. Bootstrap the first Admin account
+
+Since public registration always creates Staff accounts and Admin creation requires an existing Admin, the first Admin must be created manually. First generate a bcrypt hash for your password:
+
+```bash
+node -e 'const bcrypt = require("bcryptjs"); bcrypt.hash("YourPassword123", 10).then(h => console.log(h));'
+```
+
+Copy the hash, then run in `psql -d nexushub`:
+
+```sql
+INSERT INTO users (name, email, password, role, department, status)
+VALUES ('Admin User', 'admin@yourdomain.com', 'PASTE_HASH_HERE', 'admin', 'IT', 'active');
+```
+
+### 6. Frontend setup
 
 Open a new terminal:
 
 ```bash
 cd nexushub-frontend
 npm install
+cp .env.example .env
+```
+
+The default `.env` points to localhost — no changes needed for local development:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start the frontend:
+```bash
 npm run dev
 ```
 
-The app will run on `http://localhost:5173`. Log in with the admin account created above.
+Open `http://localhost:5173` in your browser and log in with the admin account you just created.
 
 ---
 
-## Environment Variables Reference
+## Environment Variables
 
-**Backend (`nexushub-backend/.env`):**
-| Variable | Description |
-|---|---|
-| `DB_USER` | PostgreSQL username |
-| `DB_PASSWORD` | PostgreSQL password |
-| `DB_HOST` | Database host (localhost for local dev) |
-| `DB_PORT` | Database port (default 5432) |
-| `DB_NAME` | Database name (nexushub) |
-| `PORT` | Port the Express server runs on |
-| `JWT_SECRET` | Secret key used to sign JWTs — must be long and random |
+### Backend (`nexushub-backend/.env`)
 
-See `.env.example` in each folder for a template.
+| Variable | Description | Example |
+|---|---|---|
+| `DB_USER` | PostgreSQL username | `nexushub_admin` |
+| `DB_PASSWORD` | PostgreSQL password | `securepassword` |
+| `DB_HOST` | Database host | `localhost` |
+| `DB_PORT` | Database port | `5432` |
+| `DB_NAME` | Database name | `nexushub` |
+| `PORT` | Express server port | `5000` |
+| `JWT_SECRET` | JWT signing secret — must be long and random | 64+ random bytes |
+| `DATABASE_URL` | Full connection string (for Neon/production only) | `postgresql://...` |
+
+### Frontend (`nexushub-frontend/.env`)
+
+| Variable | Description | Example |
+|---|---|---|
+| `VITE_API_URL` | Backend API base URL | `http://localhost:5000/api` |
+
+---
+
+## API Reference
+
+### Authentication (public)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register (always creates `staff` role) |
+| POST | `/api/auth/login` | Login, returns JWT token |
+| PUT | `/api/auth/profile` | Update own name (requires auth) |
+| PUT | `/api/auth/change-password` | Change own password (requires auth) |
+
+### Team Members
+| Method | Endpoint | Auth required | Description |
+|---|---|---|---|
+| GET | `/api/members` | Any | List members (Managers see own dept only) |
+| GET | `/api/members/:id` | Any | View one member |
+| POST | `/api/members` | Admin only | Add member |
+| PUT | `/api/members/:id` | Admin or Manager | Edit member |
+| DELETE | `/api/members/:id` | Admin only | Delete member |
+
+### Work Requests
+| Method | Endpoint | Auth required | Description |
+|---|---|---|---|
+| GET | `/api/requests` | Any | List requests (Staff see own only) |
+| GET | `/api/requests/:id` | Any | View one request |
+| POST | `/api/requests` | Any | Create request |
+| PUT | `/api/requests/:id` | Admin or Manager | Update request |
+| DELETE | `/api/requests/:id` | Admin only | Delete request |
+
+### Resources
+| Method | Endpoint | Auth required | Description |
+|---|---|---|---|
+| GET | `/api/resources` | Any | List all resources |
+| GET | `/api/resources/:id` | Any | View one resource |
+| GET | `/api/resources/department` | Any | Resources assigned to dept members |
+| POST | `/api/resources` | Admin only | Add resource |
+| PUT | `/api/resources/:id` | Admin only | Edit resource |
+| DELETE | `/api/resources/:id` | Admin only | Delete resource |
+
+### Search and Statistics
+| Method | Endpoint | Auth required | Description |
+|---|---|---|---|
+| GET | `/api/search?q=term` | Any | Search across all modules |
+| GET | `/api/stats` | Any | System-wide aggregation stats |
+| GET | `/api/stats/dashboard-counts` | Any | Lightweight count queries for dashboard |
+| GET | `/api/stats/department` | Manager | Department-level statistics |
 
 ---
 
 ## Features by Module
 
 ### Module 1 — Authentication
-- Register, Login, Logout
-- JWT-based authentication with 1-day token expiry
-- Protected routes (frontend) and middleware-based route protection (backend)
-- Role-based authorization (`admin`, `manager`, `staff`, `viewer`) via dedicated middleware
+- Register (public, always `staff` role — new Admins created by existing Admin only)
+- Login with JWT (1-day expiry)
+- Logout clears localStorage
+- Protected routes on both frontend (`ProtectedRoute` component) and backend (`protect` middleware)
+- Role-based authorization: `protect` + `adminOnly` + `adminOrManagerOwn` middleware chain
+- Generic error messages prevent user enumeration attacks
+- Passwords hashed with bcryptjs (cost factor 10) — never stored or returned in plain text
 
 ### Module 2 — Dashboard
-- Summary cards: Total Team Members, Active Members, Total Work Requests, Total Resources, Pending Requests, Completed Requests
-- Recent Activity feeds: New Team Members, New Work Requests, Recently Added Resources
+- 6 live summary cards: Total Members, Active Members, Total Requests, Total Resources, Pending Requests, Completed Requests
+- 3 recent activity feeds: New Team Members, New Work Requests, Recently Added Resources
+- All data fetched in parallel via `Promise.all` — single round trip per dashboard load
 
 ### Module 3 — Team Members
-- Full CRUD (Add, Edit, Delete, View Details)
-- Search by name/email
-- Filter by department/status (backend supports query params; UI filter controls are a known limitation, see below)
-- Role-restricted write actions (Admin only)
+- Full CRUD: Add (Admin only), Edit (Admin + Manager), Delete (Admin only), View Details
+- Search by name or email — backend `ILIKE` parameterized query
+- Filter by Department (dynamic from real data) and Status (Active/Inactive)
+- Role-based data scoping: Managers see only their own department's members
+- Duplicate email prevention at both application level (SELECT check) and database level (UNIQUE constraint)
+- Mobile-responsive: card view on small screens, table on desktop
 
 ### Module 4 — Work Requests
-- Full CRUD (Create, Edit, Delete, View Details)
-- Auto-generated request numbers (`REQ-0001`, etc.)
-- Status and priority tracking with color-coded badges
-- Requester name shown via SQL JOIN with the users table
-- Status filter tabs; Edit restricted to Admin/Manager, Delete restricted to Admin
+- Full CRUD: Create, Edit (Admin + Manager), Delete (Admin only), View Details
+- Auto-generated request numbers (`REQ-0001`, `REQ-0002`, ...) — UNIQUE constraint enforced at DB level
+- Requester name shown via SQL JOIN — no second database round trip
+- Filter by Status and Priority simultaneously (client-side, instant)
+- Search by title, request number, or requester name
+- Role-based data scoping: Staff see only their own requests
+- Mobile-responsive: card view on small screens, table on desktop
 
-### Module 5 — Resources
-- Full CRUD (Add, Edit, Delete, View Details)
-- Category filter tabs
-- Unique resource codes enforced at the database level
+### Module 5 — Resource Registry
+- Full CRUD: Add (Admin only), Edit (Admin only), Delete (Admin only), View Details
+- Card grid layout with category filter and status filter
+- Search by resource name or resource code
+- Unique resource codes enforced at database level (UNIQUE constraint)
+- Department resource view — shows resources assigned to members of a specific department
 
 ### Module 6 — Global Search
-- Single search bar in the top navigation bar
-- Searches Team Members, Work Requests, and Resources simultaneously
-- Debounced input (300ms) to avoid excessive API calls
-- Grouped, clickable results that navigate to the relevant page
+- Single search bar in the sticky top navigation bar
+- Searches Team Members, Work Requests, and Resources simultaneously via `Promise.all`
+- Debounced 300ms to avoid excessive API calls
+- Case-insensitive matching using PostgreSQL `ILIKE`
+- Grouped, clickable results navigate to the relevant page
+- Click-outside closes the dropdown automatically
 
 ### Module 7 — Statistics
 - Members per Department
 - Requests by Status
 - Resources by Category
-- Members by Status (Active/Inactive)
-- All computed via PostgreSQL `GROUP BY` aggregation queries
+- Members by Status (Active vs Inactive)
+- Department-level statistics for Managers (own department only)
+- All computed via PostgreSQL `GROUP BY COUNT(*)` aggregation — never fetches full row sets
+- CSS-based bar charts — no external charting library dependency
+
+### Additional Features
+- Dark/Light mode toggle with animated switch — preference saved to localStorage
+- Notification bell with unread count badge — polls every 15 seconds
+- Individual notification dismiss and "Clear all"
+- Toast notifications on every create/edit/delete action
+- My Profile page — update display name, change password (with current password verification)
+- Confirmation dialog before every delete action
 
 ---
 
-## Security Notes
+## Role-Based Access Control
 
-- Passwords are hashed with bcrypt (never stored or returned in plain text)
-- All database queries use parameterized queries (`$1, $2...`) to prevent SQL injection
-- Login/register return a generic "Invalid email or password" message regardless of which field was wrong, to prevent user enumeration attacks
-- Role permissions are enforced on the backend via middleware — frontend button-hiding is a UX convenience only, not a security boundary
-- Public registration always creates `staff`-role accounts; Admin/Manager accounts can only be created by an existing Admin through the Team Members module
+| Permission | Admin | Manager | Staff | Viewer |
+|---|---|---|---|---|
+| View all members | ✅ | Own dept only | ✅ | ✅ |
+| Add members | ✅ | ❌ | ❌ | ❌ |
+| Edit members | ✅ | ✅ | ❌ | ❌ |
+| Delete members | ✅ | ❌ | ❌ | ❌ |
+| View all requests | ✅ | ✅ | Own only | ✅ |
+| Create requests | ✅ | ✅ | ✅ | ❌ |
+| Edit/assign requests | ✅ | ✅ | ❌ | ❌ |
+| Delete requests | ✅ | ❌ | ❌ | ❌ |
+| Manage resources | ✅ | ❌ | ❌ | ❌ |
+| View dashboard/stats | ✅ | Dept-level | ✅ | ✅ |
+| Create Admin accounts | ✅ | ❌ | ❌ | ❌ |
+
+**Security note:** frontend button-hiding is UX only. All permissions are enforced by backend middleware on every request — bypassing the UI still results in 403 Forbidden.
 
 ---
 
-## Known Limitations / Cut Corners
+## Security Design
 
-Given the assessment's time constraints, the following were deliberately deprioritized:
+### Password Storage
+bcryptjs with salt factor 10. One-way hash — passwords cannot be recovered even with full database access. `bcrypt.compare()` on login never decrypts — it re-hashes and compares.
 
-- **No phone number field** for Team Members — the `users` table and search do not currently include phone, though the assessment lists it as a searchable field.
-- **No dedicated Department/Status filter UI** on the Team Members page — the backend endpoint supports these as query parameters, but the frontend only exposes a text search box.
-- **No assignee-picker UI** for Work Requests — `assigned_to` can be set via the API, but there's no dropdown to select a team member visually in the Edit form.
-- **No Manager department-scoping** — Managers currently see all data system-wide rather than being scoped to their own department, as the role table implies.
-- **No Staff-only "my requests" view** — all authenticated users see all work requests; a production version would restrict Staff to their own submissions.
-- **No toast/success notifications** — success is reflected by the UI updating (e.g., a new row appearing), but there's no dedicated success banner, only error banners on failure.
+### JWT Security
+- Signed with HMAC-SHA256 using `JWT_SECRET`
+- Payload modification detected by signature mismatch → 401
+- 1-day expiry
+- Secret generated with `crypto.randomBytes(64)` — 2^512 brute-force space
 
-These were prioritized against the time available; core CRUD, security, and the primary user flows were treated as higher priority than these polish items.
+### SQL Injection Prevention
+All queries use parameterized statements (`$1`, `$2`, ...) throughout. User input is never concatenated into SQL strings.
+
+### Enumeration Attack Prevention
+Login returns identical "Invalid email or password" message regardless of whether the email exists or the password is wrong — attackers cannot determine which accounts are registered.
+
+### Authorization Layers
+1. **Frontend:** conditional rendering based on `user.role` — UX convenience only
+2. **Backend:** `protect` middleware verifies JWT; `adminOnly` / `adminOrManagerOwn` enforce role — actual security boundary
+
+---
+
+## Database Schema
+
+```
+users
+├── id (SERIAL PK — auto-increment)
+├── name (VARCHAR NOT NULL)
+├── email (VARCHAR UNIQUE NOT NULL)
+├── password (VARCHAR NOT NULL) — bcryptjs hash, never plain text
+├── role (VARCHAR CHECK: admin|manager|staff|viewer)
+├── department (VARCHAR nullable)
+├── status (VARCHAR DEFAULT 'active')
+└── created_at (TIMESTAMP DEFAULT NOW())
+
+work_requests
+├── id (SERIAL PK)
+├── request_number (VARCHAR UNIQUE NOT NULL) — auto-generated REQ-0001
+├── title (VARCHAR NOT NULL)
+├── description (TEXT nullable)
+├── type (VARCHAR CHECK: 4 allowed values)
+├── status (VARCHAR CHECK: 4 values DEFAULT 'pending')
+├── priority (VARCHAR CHECK: 4 values DEFAULT 'medium')
+├── requested_by (INTEGER NOT NULL → users.id) — who created it
+├── assigned_to (INTEGER nullable → users.id) — who is working on it
+└── created_at, updated_at (TIMESTAMP)
+
+resources
+├── id (SERIAL PK)
+├── resource_code (VARCHAR UNIQUE NOT NULL) — e.g. LP-2201
+├── name (VARCHAR NOT NULL) — e.g. MacBook Pro M2
+├── category (VARCHAR CHECK: 7 allowed values)
+├── status (VARCHAR CHECK: 4 values DEFAULT 'available')
+├── assigned_to (INTEGER nullable → users.id)
+└── created_at (TIMESTAMP)
+```
+
+**Key relationships:**
+- `work_requests.requested_by` → `users.id` (NOT NULL — every request has a submitter)
+- `work_requests.assigned_to` → `users.id` (nullable — unassigned is a valid state)
+- `resources.assigned_to` → `users.id` (nullable — unassigned resources are in inventory)
+
+---
+
+## Validation Rules
+
+| Rule | Client-side | Server-side | Database |
+|---|---|---|---|
+| Required fields | HTML `required` attribute | Controller check | NOT NULL constraint |
+| Valid email format | `type="email"` | — | — |
+| Unique email | — | SELECT check before INSERT | UNIQUE constraint |
+| Unique request number | — | Auto-generated, never user-input | UNIQUE constraint |
+| Unique resource code | — | Caught by DB error code 23505 | UNIQUE constraint |
+| Valid role values | Dropdown limits options | — | CHECK constraint |
+| Valid status values | Dropdown limits options | — | CHECK constraint |
+| Password minimum length | `minLength={8}` on input | — | — |
+| Password confirmation match | Frontend comparison | — | — |
+
+---
+
+## Known Limitations
+
+These were deliberately deprioritized given the 4-day assessment deadline:
+
+| Gap | Impact | How to fix properly |
+|---|---|---|
+| No phone number field | Search by phone not possible | `ALTER TABLE users ADD COLUMN phone VARCHAR(20)`; update all member endpoints, forms, and search query |
+| No assignee picker UI | Managers cannot assign requests through UI (backend supports it) | Fetch `/api/members` in `EditRequestModal`, populate `<select>` for `assigned_to` field |
+| Manager department-scoping incomplete | Backend partially scoped; Statistics page shows system-wide data to all roles | Ensure every query adds `WHERE department = req.user.department` when `role === 'manager'` |
+| No automatic 401 redirect | Expired JWT causes silent API failures until manual re-login | Add axios response interceptor catching 401s, redirect to `/login` automatically |
+| No refresh tokens | Users must log in again after 24 hours | Implement httpOnly cookie refresh token flow |
+| No pagination | All rows fetched at once — won't scale to thousands of records | Add `LIMIT`/`OFFSET` to all list queries; implement pagination UI controls |
+| No real-time updates | Changes by other users only visible on manual refresh | Implement WebSocket (socket.io) or Server-Sent Events for live updates |
+| Staff "view assigned resources" not implemented | Staff cannot see resources assigned specifically to them | Add `GET /api/resources/mine` endpoint filtering by `assigned_to = req.user.id` |
+
+---
+
+## Deployment (Production)
+
+### Backend — Render
+
+1. Create account at [render.com](https://render.com)
+2. New Web Service → connect GitHub repo
+3. Configure:
+   - Root Directory: `nexushub-backend`
+   - Build Command: `npm install`
+   - Start Command: `node server.js`
+4. Add environment variables including `DATABASE_URL` from Neon
+
+### Database — Neon
+
+1. Create account at [neon.tech](https://neon.tech)
+2. Create project → copy connection string
+3. Import schema: `psql "CONNECTION_STRING" -f nexushub_database.sql`
+4. Use connection string as `DATABASE_URL` in Render environment variables
+
+### Frontend — Vercel
+
+1. Create account at [vercel.com](https://vercel.com)
+2. Import GitHub repo
+3. Configure:
+   - Root Directory: `nexushub-frontend`
+   - Framework: Vite
+4. Add environment variable: `VITE_API_URL=https://your-backend.onrender.com/api`
+
+---
+
+## Git Commit History
+
+This project was built incrementally with meaningful commits at each stage:
+- Database setup and schema design
+- Authentication (register, login, JWT, middleware)
+- Team Members CRUD with role-based access
+- Work Requests CRUD with foreign keys and auto-numbering
+- Resources CRUD with category/status constraints
+- Statistics aggregation queries
+- Global cross-module search with debouncing
+- React frontend setup (Vite, Tailwind, routing, AuthContext)
+- Individual page components with full CRUD modals
+- Role-based UI (admin-only buttons, manager edit permissions)
+- Dark/light mode toggle
+- Notification bell with dismiss functionality
+- Profile page with password change
+- Mobile-responsive layouts
+- Deployment configuration
 
 ---
 
 ## Author
 
-Siham Birhanu — Developer Internship Technical Assessment submission for Teamwork IT Solution PLC.
+**Siham Birhanu**
+Developer Internship Technical Assessment
+Teamwork IT Solution PLC — July 2026
+
+GitHub: [@sihambirhanu24](https://github.com/sihambirhanu24)
+ENDOFFILE
+echo "Done"
+Output
+
+Done
