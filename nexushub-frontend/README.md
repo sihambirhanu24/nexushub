@@ -530,35 +530,7 @@ These were deliberately deprioritized given the 4-day assessment deadline:
 
 ---
 
-## Deployment (Production)
 
-### Backend — Render
-
-1. Create account at [render.com](https://render.com)
-2. New Web Service → connect GitHub repo
-3. Configure:
-   - Root Directory: `nexushub-backend`
-   - Build Command: `npm install`
-   - Start Command: `node server.js`
-4. Add environment variables including `DATABASE_URL` from Neon
-
-### Database — Neon
-
-1. Create account at [neon.tech](https://neon.tech)
-2. Create project → copy connection string
-3. Import schema: `psql "CONNECTION_STRING" -f nexushub_database.sql`
-4. Use connection string as `DATABASE_URL` in Render environment variables
-
-### Frontend — Vercel
-
-1. Create account at [vercel.com](https://vercel.com)
-2. Import GitHub repo
-3. Configure:
-   - Root Directory: `nexushub-frontend`
-   - Framework: Vite
-4. Add environment variable: `VITE_API_URL=https://your-backend.onrender.com/api`
-
----
 
 ## Git Commit History
 

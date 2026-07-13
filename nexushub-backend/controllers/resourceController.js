@@ -35,7 +35,7 @@ exports.createResource = async (req, res) => {
   }
 
   try {
-    // Generate prefix from category
+
     const prefixMap = {
       'Laptop': 'LP',
       'Desktop': 'DT',
@@ -47,7 +47,6 @@ exports.createResource = async (req, res) => {
     };
     const prefix = prefixMap[category] || 'RS';
 
-    // Get highest existing number for this category prefix
     const maxResult = await pool.query(
       `SELECT MAX(CAST(SUBSTRING(resource_code FROM ${prefix.length + 2}) AS INTEGER)) as max_num 
        FROM resources 

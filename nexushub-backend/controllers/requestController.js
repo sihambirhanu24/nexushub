@@ -4,7 +4,6 @@ exports.createRequest = async (req, res) => {
   const { title, description, type, priority } = req.body;
 
   try {
-    // Use MAX instead of COUNT to avoid collision after deletions
     const maxResult = await pool.query(
       "SELECT MAX(CAST(SUBSTRING(request_number FROM 5) AS INTEGER)) as max_num FROM work_requests"
     );
