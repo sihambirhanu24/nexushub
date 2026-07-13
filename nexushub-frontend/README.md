@@ -17,7 +17,7 @@ NexusHub replaces the classic "one spreadsheet for staff, another for equipment,
 | Role | Email | Password |
 |---|---|---|
 | Admin | admin@example.com | Admin123 |
-| Staff | test@example.com | password123 |
+
 
 ---
 
@@ -497,21 +497,7 @@ resources
 
 ---
 
-## Validation Rules
 
-| Rule | Client-side | Server-side | Database |
-|---|---|---|---|
-| Required fields | HTML `required` attribute | Controller check | NOT NULL constraint |
-| Valid email format | `type="email"` | — | — |
-| Unique email | — | SELECT check before INSERT | UNIQUE constraint |
-| Unique request number | — | Auto-generated, never user-input | UNIQUE constraint |
-| Unique resource code | — | Caught by DB error code 23505 | UNIQUE constraint |
-| Valid role values | Dropdown limits options | — | CHECK constraint |
-| Valid status values | Dropdown limits options | — | CHECK constraint |
-| Password minimum length | `minLength={8}` on input | — | — |
-| Password confirmation match | Frontend comparison | — | — |
-
----
 
 ## Known Limitations
 
@@ -530,7 +516,7 @@ These were deliberately deprioritized given the 4-day assessment deadline:
 
 ---
 
-
+                     
 
 ## Git Commit History
 
