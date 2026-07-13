@@ -7,11 +7,7 @@ NexusHub replaces the classic "one spreadsheet for staff, another for equipment,
 
 ---
 
-## Live Demo
 
-- **Frontend:** https://nexushub-frontend.vercel.app
-- **Backend API:** https://nexushub-backend.onrender.com
-- **GitHub:** https://github.com/sihambirhanu24/nexushub
 
 **Demo credentials (local):**
 | Role | Email | Password |
