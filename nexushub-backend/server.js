@@ -9,7 +9,7 @@ const resourceRoutes = require('./routes/resourceRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 
-
+const app = express(); 
 const allowedOrigins = [
   "http://localhost:5173",
   "https://nexushub-pied.vercel.app"
